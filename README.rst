@@ -25,7 +25,7 @@ In order to download the latest stable code using git, type the following to the
 Install the toolbox
 ^^^^^^^^^^^^^^^^^^^
 
-To use the toolbox simply add the directory where you downloaded the toolbox to the Matlab path using "setpath"
+To use the toolbox simply add the directory where you downloaded the toolbox to the Matlab path using *setpath*
 
 Mex Files
 ^^^^^^^^^
