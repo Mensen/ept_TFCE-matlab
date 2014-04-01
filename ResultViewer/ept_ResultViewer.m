@@ -13,6 +13,9 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 %% Revision History
+%
+% Version History now tracked in GitHub...
+%
 % Version 6.1
 % 04.10.2013
 % - Fixed "ismatrix" call for older versions of matlab
@@ -134,7 +137,7 @@ function menu_Load_Callback(hObject, eventdata, handles)
 FullFileName = strcat(ResultsPath, ResultsFile);
 load (FullFileName);
 
-%% Check whether ¨frequency sampling rates are specified
+%% Check whether ï¿½frequency sampling rates are specified
 if ndims(Data{1}) == 4 && isfield(Info.Parameters, 'fSample') == 0
     
     fSample = inputdlg('Frequency Sampling Rate', 'User Input', 1, {'1'});
@@ -1052,6 +1055,10 @@ switch seltype
             switch FactorType
                 case 1
                     
+                    if strcmp(handles.Info.Parameters.type, 'i');
+                        Data = Data(:);
+                    end
+                    
                     for i = 1:size(Data,1)
                     
                         y(i,:)   = squeeze(mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(i,:), 'UniformOutput', false)')));
@@ -1070,7 +1077,6 @@ switch seltype
                     
                     for i = 1:size(Data,2)
                     
-
                         y(i,:)   = squeeze(mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(:,i), 'UniformOutput', false))));
 %                         e(i,:)   = squeeze(std(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(:,i), 'UniformOutput', false))));
                     
@@ -1112,6 +1118,7 @@ switch seltype
             H.Axes = axes;
             set(H.Axes,...
                 'FontName',         'Helvetica'         ,...
+                'XLim',             [x(1,1), x(1,end)]  ,...
                 'NextPlot',         'replacechildren'   );
             
             hold on;
