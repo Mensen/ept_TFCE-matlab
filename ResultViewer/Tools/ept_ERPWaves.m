@@ -6,7 +6,7 @@ bL = 200;
 % Channels = {'E78','E79', 'E85', 'E86', 'E87', 'E92', 'E93'}; % Right Parietal
 % Channels = {'E24', 'E20', 'E27', 'E28','E29', 'E34', 'E35'}; % Left Central
 % Channels = {'E14','E8', 'E9', 'E1', 'E2'}; % Right Frontal
-Channels = {'E74', 'E75', 'E76', 'E81', 'E82', 'E83', 'E88', 'E89'}; % Right Occipital
+% Channels = {'E74', 'E75', 'E76', 'E81', 'E82', 'E83', 'E88', 'E89'}; % Right Occipital
 
 if nargin == 3;
     Input     = inputdlg({'Channel Names', 'Range Start', 'Range End'}, 'Specify Data Range', 1, {'E1,E2,E3', '1', '10'});
@@ -18,11 +18,19 @@ end
 e_loc    = Info.Electrodes.e_loc;
 
 % Find the channels
-ChId = zeros(1,numel(e_loc));
-for i = 1:numel(Channels)
-    ChId   = ChId + strcmp(Channels{i},{e_loc(:).labels});
+if isa(Channels, 'double')
+    ChId = Channels;
+else
+    ChId = zeros(1,numel(e_loc));
+    for i = 1:numel(Channels)
+        ChId   = ChId + strcmp(Channels{i},{e_loc(:).labels});
+    end
+    ChId = logical(ChId);
 end
-ChId = logical(ChId);
+
+if ~isfield(Info.Parameters, 'GroupSizes')
+    Info.Parameters.GroupSizes = cell2mat(cellfun(@(x) size(x, 1), Data, 'UniformOutput', false));
+end
 
 if factor == 1;
     for i = 1:size(Data,1)
@@ -73,8 +81,9 @@ set(H.Figure,...
 H.Axes = axes;
 set(H.Axes,...
     'FontName',         'Helvetica'         ,...
+    'XLim',             [x(1,1),x(1,end)]   ,...
     'NextPlot',         'replacechildren'   );
-
+    
 hold on;
 
 H.Line = plot(H.Axes, x',y'); % Create the first line and assign a handle
@@ -101,4 +110,8 @@ hTitle  = title (['ERP Comparison for ', c{:}]);
 hXLabel = xlabel('Time (ms)'                     );
 hYLabel = ylabel('ERP Strength (MicroVolts)'     );
 
+for i = 1:nL
+    Legend{i} = ['Level ' int2str(i)];
+end
+H.Legend = legend(H.Line, Legend);
         
