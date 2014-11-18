@@ -166,23 +166,36 @@ RandStream.setGlobalStream(myRand);
     
  elseif nargin > 2; 
     
-    % Not a lot of error checking done here yet.
-    DataFile{1} = DataFile1;
-    DataFile{2} = DataFile2;
-    
-    Data{1}       = load (DataFile1, 'Summary');
-    Data{1}       = Data{1}.Summary;
-    Data{2}       = load (DataFile2);
-
-    if type == 'i' || type == 'd'
-        Data{2} 	= Data{2}.Summary;
+    % check if file or variable entered as data
+    if isa(DataFile1, 'char') 
+        % Not a lot of error checking done here yet.
+        DataFile{1} = DataFile1;
+        DataFile{2} = DataFile2;
+        
+        Data{1}       = load (DataFile1, 'Summary');
+        Data{1}       = Data{1}.Summary;
+        Data{2}       = load (DataFile2);
+        
+        if type == 'i' || type == 'd'
+            Data{2} 	= Data{2}.Summary;
+            aData = [Data{1};Data{2}];
+        elseif type == 'c'
+            Data{2}     = Data{2}.Behavioural;
+        end
+        
+    elseif isa(DataFile1, 'double')
+        DataFile{1, 2} = '';
+        Data{1} = DataFile1;
+        Data{2} = DataFile2;
         aData = [Data{1};Data{2}];
-    elseif type == 'c'
-        Data{2}     = Data{2}.Behavioural;
     end
     
-    e_loc         = load (ElecFile);
-    e_loc         = e_loc.e_loc;
+    if isa(ElecFile, 'char')
+        e_loc         = load (ElecFile);
+        e_loc         = e_loc.e_loc;
+    else
+        e_loc = ElecFile;
+    end
  
  end
 
@@ -206,6 +219,8 @@ if nargin > 2
             nPerm       = Value;
         case 'rsample'
             rSample     = Value;
+        case 'fsample'
+            fSample     = Value;
         case 'savename'
             saveName    = Value;
         case 'type'
@@ -292,6 +307,11 @@ display('Calculating Actual Differences...')
      
     end
 
+% check for non-zero T-values (will crash TFCE)
+if max(abs(T_Obs(:))) < 0.00001
+    error('T-values were all 0')
+end
+    
 % TFCE transformation...
 if ismatrix(T_Obs);
     TFCE_Obs = ept_mex_TFCE2D(T_Obs, ChN, E_H);
@@ -405,6 +425,10 @@ Info.Parameters.type        = type;
 Info.Parameters.nChannels   = nCh;
 Info.Parameters.nSamples    = nS; % Not sure if actually used...
 Info.Parameters.GroupSizes  = [nA, nB];
+
+if exist('fSample', 'var')
+    Info.Parameters.fSample = fSample;
+end
 
 Info.Electrodes.e_loc       = e_loc;
 Info.Electrodes.ChannelNeighbours = ChN;
