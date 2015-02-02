@@ -570,6 +570,11 @@ if ndims(handles.Data{1}) == 3
     Cn = ept_ClusRes(xn, ChN, 0.01); % Calculate Negative Clusters
     
     C = Cn-Cp; % Combine the two
+    
+    % export the cluster data to the global workspace to use channel indices
+    fprintf(1, 'Info: Channel cluster results assigned to workspace\n');
+    assignin('base', 'current_clusters', C);
+    
     b = unique(C); % How many different clusters are there?
     b(b==0)=[]; % Eliminate the 0 from being a unique cluster
     
@@ -711,7 +716,7 @@ jtitle.setVerticalAlignment(0);
 %% Put the data in there
 set(handles.Fig.ClusterRes.T, 'Data', ClusRes);
 
-guidata(hObject,handles);
+guidata(hObject, handles);
 
 %% -- Called when cell is selected in the table --- %%
 function Callback_TableSelection(mtable, eventdata, handles, jtable);
