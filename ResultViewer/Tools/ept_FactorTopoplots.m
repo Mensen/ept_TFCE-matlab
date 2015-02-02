@@ -1,4 +1,4 @@
-function [] = ept_FactorTopoplots(Data, e_loc, Results, Factor, Sample)
+function ept_FactorTopoplots(Data, e_loc, Results, Factor, Sample)
 %% Levels and Statistics Topoplot Tight
 
 % This file is part of the program ept_ResultViewer.
@@ -30,7 +30,8 @@ if isstruct(Results.TFCE_Obs)
         b       = cellfun(@mean, a, 'UniformOutput', false); 
         Stats   = Results.TFCE_Obs.B(:,Sample)';
     else
-        error('Only main effects currently available: Factor = 1 or 2.')
+        fprintf('Only main effects currently available: Factor = 1 or 2.');
+        return
     end
 else
     a       = cellfun(@(x) x(:,:,Sample), Data, 'UniformOutput', false);

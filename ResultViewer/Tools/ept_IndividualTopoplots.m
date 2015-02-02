@@ -1,5 +1,5 @@
 function H = ept_IndividualTopoplots(Data, e_loc, Results, Factor, Sample)
-%% Ept function to plot each individuals topography for a given sample...
+% Ept function to plot each individuals topography for a given sample...
 
 % Input
 % If channel*frequency*time data then the Sample variable should be
@@ -12,7 +12,7 @@ if isstruct(Results.TFCE_Obs)
         Stats   = Results.TFCE_Obs.A(:,Sample)';
     elseif Factor == 2
         Data    = Data';    
-        iData       = cellfun(@(x) x(:,:,Sample), Data, 'UniformOutput', false);
+        iData   = cellfun(@(x) x(:,:,Sample), Data, 'UniformOutput', false);
         b       = cellfun(@mean, iData, 'UniformOutput', false); 
         Stats   = Results.TFCE_Obs.B(:,Sample)';
     else
@@ -24,7 +24,7 @@ else
     Stats =  Results.TFCE_Obs(:,Sample)';
 end
 
-%% Calculate the average ERP over multiple conditions (just cell2mat for single condition TTest)
+% Calculate the average ERP over multiple conditions (just cell2mat for single condition TTest)
 gData = zeros(size(b,1), numel(b{1}));
 % will have to make multiple condition means for iData too...
 for i = 1:size(b,2);
@@ -35,16 +35,17 @@ end
 gData = gData/size(b,2);
 
 
-%% Calculate plot specific variables
+% Calculate plot specific variables
 % Find max number of participants in each group and add 3 (TFCE Stats will be twice as large...
 
-numPlots    = max(cell2mat(cellfun(@(x) size(x,1), Data, 'UniformOutput', false)))+3;
+group_sizes = cellfun(@(x) size(x,1), Data);
+numPlots    = max(group_sizes(:))+3;
 
 axesPos     = (0:1:numPlots)/numPlots;             % Determines the starting x-axis point for each plot (last element redundant)
 axesWidth   = 1/numPlots;
 mapLimits   = [min(gData(:)), max(gData(:))];      % Calculates the total ERP amplitude range over all groups to adjust the colormaps later
 
-%% Prepare the figure
+% Prepare the figure
 H.Figure = figure;
 set(H.Figure,...
     'Name',             ['S:' num2str(Sample) ' Factor Topoplots']  ,...
@@ -60,6 +61,7 @@ for j = 1:size(iData,1) % loop for rows (levels)
     for i = 1:numPlots-2 % loop for plots (individuals + group)
 
         H.Axes(i,j) = axes(...
+            'parent', H.Figure,...
             'Position', [axesPos(i) (j-1)/size(iData,1) axesWidth 1/size(iData,1)] ,...
             'xtick', [] ,...
             'ytick', [] );
@@ -72,28 +74,23 @@ end
 H.TFCEAxes = axes('Position', [axesPos(end-2), 0, axesWidth*2, 1]);
 
 % Adjusts the maps color scheme so topoplot colours are equal among level topoplots
-set(H.Axes,...
-    'CLim',             mapLimits           );
+set(H.Axes,'CLim', mapLimits);
 
-%% Plot the actual topoplots of each individual
-
+% Plot the actual topoplots of each individual
 for j = 1:size(iData,1) % loop for rows (levels)
     for i = 1:size(iData{j},1) % loop for plots (individuals + group)
-        
-        set(H.Figure,'CurrentAxes',H.Axes(i,j))
-        ept_Topoplot(iData{j}(i,:), e_loc);
-        
+        % draw each topoplot
+        ept_Topoplot(iData{j}(i,:), e_loc,...
+            'Axes', H.Axes(i,j));
     end
 end 
 
-%% Plot group topoplots
+% Plot group topoplots
 for i = 1:size(gData,1)
-   
-    set(H.Figure,'CurrentAxes',H.Axes(end,i))
-    ept_Topoplot(gData(i,:), e_loc);
-    
+    ept_Topoplot(gData(i,:), e_loc,...
+        'Axes', H.Axes(end, i));
 end
 
-%% Plot the larger TFCE topoplot
-set(H.Figure,'CurrentAxes',H.TFCEAxes)
-ept_Topoplot(Stats, e_loc);
+% Plot the larger TFCE topoplot
+ept_Topoplot(Stats, e_loc,...
+    'Axes', H.TFCEAxes);
