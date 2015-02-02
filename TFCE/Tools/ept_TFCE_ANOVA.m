@@ -80,7 +80,7 @@
 % - Changed default E_H parameters to [0.66, 1] since we use F-values not T
 
 
- function [] = ept_TFCE_ANOVA
+ function [] = ept_TFCE_ANOVA(Data, e_loc)
 
 %% Set Defaults
  
@@ -112,7 +112,7 @@ saveName   	= noGr{5};
 
 
 % Data input
-if nargin < 1;
+if nargin < 2;
     
     for i = 1:nGroups
         [DataFile{i}, DataPath{i}] = uigetfile('*.mat', ['Please Select Group ', num2str(i), ' Conditions'], 'MultiSelect', 'on');
@@ -122,8 +122,6 @@ if nargin < 1;
         fprintf(1, 'Returning: No Data File Selected... \n');
         return;
     end
-    
-tic; % Start the timer for the entire analysis
 
     nLevels = cell2mat(cellfun(@(x) numel(x), DataFile, 'UniformOutput', false));
     
@@ -150,14 +148,15 @@ display ('Loading EEG Data...')
     [ElecFile, ElecPath] = uigetfile('', 'Please Select the Electrodes File');
     FullElecName = strcat(ElecPath, ElecFile);
     load (FullElecName);
+    
+    % Rotate the data file so that groups are columns
+    Data = Data';
 
-else
-    error('Script does not currently accept input arguments');
 end
 
-%% Rotate the data file so that groups are columns
-Data = Data';
- 
+% Start the timer for the entire analysis
+tic; 
+
 %% Compute Data Sizes
 
 nP = cell2mat(cellfun(@(x) size(x,1), Data, 'UniformOutput', false)); % Find the number of participants in each dataset
@@ -278,8 +277,10 @@ end
 Info.Electrodes.e_loc               = e_loc;
 Info.Electrodes.ChannelNeighbours   = ChN;
 
-Info.DataFiles              = DataLabel;
-Info.DataPaths              = DataPath;
+if exist('DataLabel', 'var')
+    Info.DataFiles              = DataLabel;
+    Info.DataPaths              = DataPath;
+end
 
 Results.Obs                 = F_Obs;
 Results.TFCE_Obs            = TFCE_Obs;
