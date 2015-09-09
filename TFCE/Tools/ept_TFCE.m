@@ -101,13 +101,51 @@
  saveName   = ['ept_Results_', date, '.mat'];
  type       = 'i'; % i = independent sample T-Test; d = dependent (paired) sample T-Test; c = Pearson's correlation
  plots      = 0; % change to '1' to show significance plots after calculation
-  
+ flag_ft    = 0; 
+ flag_tfce  = 1;
+ 
 % Set random stream depending on the clock value (unpredictable).
 myRand = RandStream('mt19937ar','Seed',sum(100*clock));
 RandStream.setGlobalStream(myRand);
  
- %% Process Arguments
- if nargin < 1;
+% Process Secondary Arguments
+if nargin > 2
+  if (round(nargin/2) == nargin/2)
+    error('Even number of input arguments??')
+  end
+  for i = 1:2:length(varargin)
+    Param = varargin{i};
+    Value = varargin{i+1};
+    if ~ischar(Param)
+      error('Flag arguments must be strings')
+    end
+    Param = lower(Param);
+    
+    switch Param
+        case 'e_h'
+            E_H         = Value;
+        case 'nperm'
+            nPerm       = Value;
+        case 'rsample'
+            rSample     = Value;
+        case 'fsample'
+            fSample     = Value;
+        case 'savename'
+            saveName    = Value;
+        case 'type'
+            type        = lower(Value);
+        case 'flag_ft'
+            flag_ft     = Value;
+        case 'flag_tfce'
+            flag_tfce   = Value;
+        case 'plots'
+            plots       = Value;
+    end
+  end
+end
+
+%% Process Arguments
+if nargin < 1;
     
     prompt = {'Number of Permutations', 'Sampling Rate', '(i)n(d)ependent / (c)orrelation?', 'Results Name', 'Plots? 0=No, 1=Yes'};
     dlg_title = 'Define Parameters';
@@ -117,13 +155,13 @@ RandStream.setGlobalStream(myRand);
     if isempty(noGr)
         error('Analysis cancelled')
     end
-            
-    nPerm      = str2double(noGr{1});  % number of permutations 
+    
+    nPerm      = str2double(noGr{1});  % number of permutations
     rSample    = str2double(noGr{2});  % sampling rate
     type       = noGr{3};
     saveName   = noGr{4};
     plots      = str2double(noGr{5});
-     
+    
     if type == 'i' || type == 'd'
         [DataFile{1}, DataPath{1}] = uigetfile('', 'Please Select the first EEG Summary File', 'MultiSelect', 'off');
         [DataFile{2}, DataPath{2}] = uigetfile('', 'Please Select the second EEG Summary File', 'MultiSelect', 'off');
@@ -164,10 +202,10 @@ RandStream.setGlobalStream(myRand);
     FullElecName = strcat(ElecPath, ElecFile);
     load (FullElecName);
     
- elseif nargin > 2; 
+elseif nargin > 2;
     
     % check if file or variable entered as data
-    if isa(DataFile1, 'char') 
+    if isa(DataFile1, 'char')
         % Not a lot of error checking done here yet.
         DataFile{1} = DataFile1;
         DataFile{2} = DataFile2;
@@ -196,39 +234,7 @@ RandStream.setGlobalStream(myRand);
     else
         e_loc = ElecFile;
     end
- 
- end
-
-% Process Secondary Arguments
-if nargin > 2
-  if (round(nargin/2) == nargin/2)
-    error('Even number of input arguments??')
-  end
-  for i = 1:2:length(varargin)
-    Param = varargin{i};
-    Value = varargin{i+1};
-    if ~ischar(Param)
-      error('Flag arguments must be strings')
-    end
-    Param = lower(Param);
     
-    switch Param
-        case 'e_h'
-            E_H         = Value;
-        case 'nperm'
-            nPerm       = Value;
-        case 'rsample'
-            rSample     = Value;
-        case 'fsample'
-            fSample     = Value;
-        case 'savename'
-            saveName    = Value;
-        case 'type'
-            type        = lower(Value);
-        case 'plots'
-            plots       = Value;
-    end
-  end
 end
 
 nA   = size(Data{1},1);
@@ -254,8 +260,10 @@ if ~isequal(nB, nA) && type == 'd'
 end
 
 % Check Location File for Number of Channels
-if ~isequal(nCh, length(e_loc))
-    error ('Number of channels in data does not equal that of locations file')
+if ~flag_ft
+    if ~isequal(nCh, length(e_loc))
+        error ('Number of channels in data does not equal that of locations file')
+    end
 end
 
 %% Create Summary File
@@ -265,9 +273,13 @@ tic; % Start the timer for the entire analysis
 
 %% Calculate the channels neighbours... using the modified version ChN2
 
-display('Calculating Channel Neighbours...')
-ChN = ept_ChN2(e_loc);
-display('Done')
+if ~flag_ft
+    display('Calculating Channel Neighbours...')
+    ChN = ept_ChN2(e_loc);
+    display('Done')
+else
+    ChN = [];
+end
 
 %% Create all variables in loop at their maximum size to increase performance
 
@@ -313,14 +325,28 @@ if max(abs(T_Obs(:))) < 0.00001
 end
     
 % TFCE transformation...
-if ismatrix(T_Obs);
-    TFCE_Obs = ept_mex_TFCE2D(T_Obs, ChN, E_H);
+if flag_tfce
+    if ismatrix(T_Obs);
+        if ~flag_ft
+            TFCE_Obs = ept_mex_TFCE2D(T_Obs, ChN, E_H);
+        else
+            % if data is not in channel neighbourhood
+            % artificially create 3rd dimension
+            T_Obs = repmat(T_Obs, [1, 1, 2]);
+            deltaT = max(abs(T_Obs(:)))/50;
+            TFCE_Obs = ept_mex_TFCE(T_Obs, deltaT);
+            % remove extra dimension
+            T_Obs = T_Obs(:, :, 1);
+            TFCE_Obs = TFCE_Obs(:, :, 1);
+        end
+    end
+    
+    if ndims(T_Obs) == 3;
+        TFCE_Obs = ept_mex_TFCE3D(T_Obs, ChN, E_H);
+    end
+else
+    TFCE_Obs = T_Obs;
 end
-
-if ndims(T_Obs) == 3;
-    TFCE_Obs = ept_mex_TFCE3D(T_Obs, ChN, E_H);
-end
-
 display('Done')
 
 %% Calculating the T value and TFCE enhancement of each different permutation
@@ -378,12 +404,28 @@ display('Calculating Permutations...')
             end
             
         % TFCE transformation...
-        if ismatrix(T_Perm);
-            TFCE_Perm = ept_mex_TFCE2D(T_Perm, ChN, E_H);
-        end
-
-        if ndims(T_Perm) == 3;
-            TFCE_Perm = ept_mex_TFCE3D(T_Perm, ChN, E_H);
+        if flag_tfce
+            if ismatrix(T_Perm);
+                if ~flag_ft
+                    TFCE_Perm = ept_mex_TFCE2D(T_Perm, ChN, E_H);
+                else
+                    % if data is not in channel neighbourhood
+                    % artificially create 3rd dimension
+                    T_Perm = repmat(T_Perm, [1, 1, 2]);
+                    deltaT = max(abs(T_Perm(:)))/50;
+                    TFCE_Perm = ept_mex_TFCE(T_Perm, deltaT);
+                    % remove extra dimension
+                    T_Perm = T_Perm(:, :, 1);
+                    TFCE_Perm = TFCE_Perm(:, :, 1);
+                end
+            end
+            
+            if ndims(T_Perm) == 3;
+                TFCE_Perm = ept_mex_TFCE3D(T_Perm, ChN, E_H);
+            end
+            
+        else
+            TFCE_Perm = T_Perm;
         end
         
         maxTFCE(i) = max(abs(TFCE_Perm(:)));       % stores the maximum absolute value
@@ -440,6 +482,7 @@ Results.TFCE_Obs            = TFCE_Obs;
 Results.maxTFCE             = sort(maxTFCE);
 Results.P_Values            = P_Values;
 
+% save the file in the current directory
 save (saveName, 'Info', 'Data', 'Results', '-mat')
 
 %%

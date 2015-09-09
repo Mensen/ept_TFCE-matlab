@@ -79,7 +79,7 @@
 
 % Notes
 % a=cell2mat(cellfun(@(x) x(:,53,169), Data, 'UniformOutput', false)); %(use to extract data from a particular channel sample for further analysis (e.g. separate ANCOVA).
-% Hum = squeeze(mean(cell2mat(Data(:,2)),1)); %Use this to extract average of certain group or condition 
+% Hum = squeeze(mean(cell2maResults_10-Apr-2015t(Data(:,2)),1)); %Use this to extract average of certain group or condition 
 
 %%
 function varargout = ept_ResultViewer(varargin)
@@ -149,7 +149,6 @@ if ndims(Data{1}) == 4 && isfield(Info.Parameters, 'fSample') == 0
 elseif isfield(Info.Parameters, 'fSample') == 1
     
 else
-    
     Info.Parameters.fSample = [];
     
     % Save the Results File with the new parameter set
@@ -178,6 +177,7 @@ end
 % Make the pop-up menu invisible if its a single comparison analysis...
 if ~isstruct(Results.P_Values)
     set(handles.Pop_FactorSelect,'Value', 1);
+    % make popup invisible
     set(handles.Pop_FactorSelect, 'Visible', 'off')
 end
 
@@ -242,6 +242,9 @@ else
 end
 
 set(handles.txt_Name,'String',ResultsFile);
+
+% the colormap to matlab default
+colormap(parula);
 
 %% Prepare the interpolation parameters for fast topoplot
 PrepareTopoplot(hObject, eventdata, handles)
@@ -360,8 +363,6 @@ if T_P >= 2000
 else
     set(handles.tx_Time,'String',[num2str(T_P) ' ms']);
 end
-
-
 
 makeTopoplot(hObject, eventdata, handles)
 
@@ -539,7 +540,9 @@ e_loc       = handles.Info.Electrodes.e_loc;
 sPoint         = sscanf(get(handles.tx_sPoint,'String'),'%*s %i');
 V           = handles.Obs(:,sPoint);
 
-ept_Topoplot(V, e_loc, 'NewFigure', 1);
+ept_Topoplot(V, e_loc,...
+    'NewFigure', 1, ...
+    'PlotChannels', 0);
 
 guidata(hObject,handles);
 
@@ -733,7 +736,7 @@ SelectedValue = Data{RowIdx, ColIdx};
 if ColIdx == 1 % Channel selected
     % Highlight the specified channel on the topoplot (if possible)...
     x = get(handles.HeadView, 'children'); %all handles in the HeadView axes (first two are the surface and countours, rest are channels)
-    x = x(numel(x)-SelectedValue-1);
+    x = x(numel(x)-SelectedValue);
     
     tmpstr = get(x, 'userdata') ;
     set(x, 'userdata', get(x, 'string'));
@@ -882,14 +885,12 @@ makeTopoplot(hObject, eventdata, handles)
 
 guidata(hObject,handles);
 
+
 function makeTopoplot(hObject, eventdata, handles)
 
 e_loc       = handles.Info.Electrodes.e_loc;
 XYq         = handles.XYq;
 gridscale   = 100;           % Topoplot Details (100 is high)
-
-% cm          = 'hsv';
-% colormap(cm);               % Colormap (French is custom)
 
 %% Calculate
 thresh  = str2double(get(handles.Txt_Thresh,'String'));
@@ -900,11 +901,11 @@ fPoint = sscanf(get(handles.tx_fPoint,'String'),'%*s %i');
 update_Time_Sig_Plot(hObject, handles);
 
 if ndims(handles.Data{1})==3
-    data = handles.Obs(:,sPoint);
+    data = handles.Obs(:, sPoint);
     id{1}    = find(handles.nP_Values(:,sPoint)<thresh); % Significant Channels
     id{2}    = find(handles.nP_Values(:,sPoint)>=thresh); % Non-significant Channels
 else
-    data = handles.Obs(:,fPoint,sPoint); 
+    data = handles.Obs(:,fPoint, sPoint); 
     id{1}    = find(handles.nP_Values(:,fPoint,sPoint)<thresh); % Significant Channels
     id{2}    = find(handles.nP_Values(:,fPoint,sPoint)>=thresh); % Non-significant Channels
 end
@@ -923,10 +924,10 @@ set(handles.HeadView                        , ...
     'CameraPosition'      , [0 0 1]         );   % Since surface is a 3D action, change camera to seem 2D
 axis(handles.HeadView, 'square', 'off')    
 
-hSurf       = surf(handles.HeadView, XYq*unsh, XYq'*unsh, zeros(size(Zi)), Zi,...
-    'EdgeColor','none',...
-    'FaceColor','interp');
-hContour    = contourf(handles.HeadView, XYq, XYq', Zi*.075, 5,'k');
+% hSurf       = surf(handles.HeadView, XYq*unsh, XYq'*unsh, zeros(size(Zi)), Zi,...
+%     'EdgeColor','none',...
+%     'FaceColor','interp');
+hContour    = contourf(handles.HeadView, XYq, XYq', Zi*.075, 8,'k');
 
 %Plot channels
 labels    = {e_loc.labels};  
@@ -1061,15 +1062,54 @@ switch seltype
                 case 1
                     
                     if strcmp(handles.Info.Parameters.type, 'i');
+                        
                         Data = Data(:);
+                        
+                        for i = 1:size(Data,1)
+                            
+                            y(i,:)   = squeeze(mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(i,:), 'UniformOutput', false)')));
+                            e(i,:)   = squeeze(std(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(i,:), 'UniformOutput', false)')))...
+                                / sqrt(handles.Info.Parameters.GroupSizes(1));
+                            
+                        end
+                        
+                    elseif strcmp(handles.Info.Parameters.type, 'd');
+                        
+                        % check for dependent test to 0
+                        if max(Data{2}(:)) < 0.05
+                            for i = 1:size(Data,1)
+                                
+                                y(i,:)   = squeeze(mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(i, :), 'UniformOutput', false)')));
+                                e(i,:)   = squeeze(std(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(i, :), 'UniformOutput', false)')))...
+                                    / sqrt(handles.Info.Parameters.GroupSizes(1));
+                            end
+                            
+                        else
+                            % Calculate SE for within group using Cousineau method
+                            ParticipantScore = cell2mat(cellfun(@(x) x(:,IdCh,:), Data, 'UniformOutput', false));
+                            ParticipantMean  = mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data, 'UniformOutput', false)),2);
+                            ParticipantMeanRep = repmat(ParticipantMean, [1, size(ParticipantScore, 2), 1]);
+                            ConditionDifferences = ParticipantScore - ParticipantMeanRep;
+                            % single error bar for both (CI = s.e. * 1.96)
+                            e = (squeeze(std(ConditionDifferences)) / sqrt(handles.Info.Parameters.GroupSizes(1))) * 1.96;
+                            
+                            for i = 1:size(Data, 2)
+                                y(i,:)   = squeeze(mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(:,i), 'UniformOutput', false))));
+                            end
+                            
+                        end
+                        
+                    else
+                        
+                        for i = 1:size(Data,1)
+                            
+                            y(i,:)   = squeeze(mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(i,:), 'UniformOutput', false)')));
+                            e(i,:)   = squeeze(std(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(i,:), 'UniformOutput', false)')))/sqrt(handles.Info.Parameters.GroupSizes(1));
+                            
+                        end
+                        
                     end
-                    
-                    for i = 1:size(Data,1)
-                    
-                        y(i,:)   = squeeze(mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(i,:), 'UniformOutput', false)')));
-                        e(i,:)   = squeeze(std(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(i,:), 'UniformOutput', false)')))/sqrt(handles.Info.Parameters.GroupSizes(1));
-                    
-                    end
+   
                     
                 case 2 
                     
@@ -1078,12 +1118,11 @@ switch seltype
                     ParticipantMean  = mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data, 'UniformOutput', false)),2);
                     ParticipantMeanRep = repmat(ParticipantMean, [1,size(ParticipantScore,2),1]);
                     ConditionDifferences = ParticipantScore-ParticipantMeanRep;
-                    e = squeeze(mean(ConditionDifferences));
+                    e = squeeze(std(ConditionDifferences)) / sqrt(handles.Info.Parameters.GroupSizes(1));
                     
-                    for i = 1:size(Data,2)
+                    for i = 1:size(Data, 2)
                     
                         y(i,:)   = squeeze(mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(:,i), 'UniformOutput', false))));
-%                         e(i,:)   = squeeze(std(cell2mat(cellfun(@(x) x(:,IdCh,:), Data(:,i), 'UniformOutput', false))));
                     
                     end
 

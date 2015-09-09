@@ -118,19 +118,19 @@ if nargin < 2;
         [DataFile{i}, DataPath{i}] = uigetfile('*.mat', ['Please Select Group ', num2str(i), ' Conditions'], 'MultiSelect', 'on');
     end
     
-    if DataFile{1} == 0
+    if isempty(DataFile{1})
         fprintf(1, 'Returning: No Data File Selected... \n');
         return;
     end
-
+    
     nLevels = cell2mat(cellfun(@(x) numel(x), DataFile, 'UniformOutput', false));
     
-display ('Checking Input Files...')    
+    display ('Checking Input Files...')
     if numel(unique(nLevels)) > 1
         error('All groups must have the same number of conditions');
     end
     
-display ('Loading EEG Data...')
+    display ('Loading EEG Data...')
     try
         for j = 1:nGroups;
             for i = 1:length(DataFile{j})
@@ -151,7 +151,7 @@ display ('Loading EEG Data...')
     
     % Rotate the data file so that groups are columns
     Data = Data';
-
+    
 end
 
 % Start the timer for the entire analysis

@@ -252,6 +252,5 @@ end
 % Adjustments
 axis square
 axis off
-colormap(jet)
 
 
