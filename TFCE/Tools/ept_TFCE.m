@@ -47,6 +47,8 @@
 
 % Revision History
 %
+% Versions now tracked on GitHub https://github.com/Mensen/ept_TFCE-matlab
+%
 % Version 2.2
 % 12.09.2013
 % - Calls the new TFCE mex file which simultaneously looks for negative
@@ -103,6 +105,7 @@
  plots      = 0; % change to '1' to show significance plots after calculation
  flag_ft    = 0; 
  flag_tfce  = 1;
+ ChN = [];
  
 % Set random stream depending on the clock value (unpredictable).
 myRand = RandStream('mt19937ar','Seed',sum(100*clock));
@@ -140,6 +143,10 @@ if nargin > 2
             flag_tfce   = Value;
         case 'plots'
             plots       = Value;
+        case 'chn'
+            ChN         = Value;
+        otherwise
+            display (['Unknown parameter setting: ' Param])
     end
   end
 end
@@ -273,12 +280,10 @@ tic; % Start the timer for the entire analysis
 
 %% Calculate the channels neighbours... using the modified version ChN2
 
-if ~flag_ft
+if ~flag_ft || isempty(ChN);
     display('Calculating Channel Neighbours...')
     ChN = ept_ChN2(e_loc);
     display('Done')
-else
-    ChN = [];
 end
 
 %% Create all variables in loop at their maximum size to increase performance
