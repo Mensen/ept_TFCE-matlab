@@ -250,7 +250,8 @@ end
 % end
 
 % Adjustments
-axis square
-axis off
-
+% square axes
+set(H.CurrentAxes, 'PlotBoxAspectRatio', [1, 1, 1]);
+% hide the axes
+set(H.CurrentAxes, 'visible', 'off');
 
