@@ -233,6 +233,8 @@ elseif nargin > 2;
         Data{1} = DataFile1;
         Data{2} = DataFile2;
         aData = [Data{1};Data{2}];
+    else
+        fprintf(1, 'error: could not recognise data format (possibly single) \n');
     end
     
     if isa(ElecFile, 'char')
@@ -280,7 +282,7 @@ tic; % Start the timer for the entire analysis
 
 %% Calculate the channels neighbours... using the modified version ChN2
 
-if ~flag_ft || isempty(ChN);
+if ~flag_ft && isempty(ChN)
     display('Calculating Channel Neighbours...')
     ChN = ept_ChN2(e_loc);
     display('Done')
