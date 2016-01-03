@@ -58,11 +58,12 @@ Mex Files
 
 Increase the speed of the more computationally demanding operations, this toolbox uses mex files which are compiled files written in the c-language. Although the toolbox includes the pre-compiled mex file for both unix and Windows systems, we cannot garauntee full compatibility with your specific system setup. For this reason we include the original .c files which can be used to compile the code again taking into account the specific system you are running under. To mex the files, navigate the dependencies folders in the toolbox and in the matlab command window type::
 
-  mex ept_TFCE2D.c
+  mex ept_mex_TFCE2D.c
 
 and::
 
-  mex ept_TFCE3D.c
+  mex ept_mex_TFCE3D.c
+  mex ept_mex_TFCE.c
 
 You may need to initially configure your system to use a specific compiler which can be achieved by typing the following in the matlab command window::
 

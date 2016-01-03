@@ -459,7 +459,7 @@ if plots == 1;
     if ismatrix(T_Perm);
         figure
         plot(sum(-log(P_Values)));
-        title (SaveName)
+        title (saveName)
     end
 end
 
