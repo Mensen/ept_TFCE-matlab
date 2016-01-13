@@ -261,10 +261,10 @@ EH 	   = (double*)mxGetPr(prhs[2]);
 ndim = mxGetNumberOfDimensions(prhs[0]);
 ndim2 = mxGetNumberOfDimensions(prhs[1]);
 if (ndim!=3){
-	mxErrMsgTxt("Data input should be 3D: Channel*Frequency*Time");
+	mexErrMsgTxt("Data input should be 3D: Channel*Frequency*Time");
 }
 else if (ndim2!=2){
-	mxErrMsgTxt("Channel*Neighbour file should be 2D");
+	mexErrMsgTxt("Channel*Neighbour file should be 2D");
 }
 	
 dims = mxGetDimensions(prhs[0]);
