@@ -233,6 +233,14 @@ elseif nargin > 2;
         Data{1} = DataFile1;
         Data{2} = DataFile2;
         aData = [Data{1};Data{2}];
+        
+    elseif isa(DataFile1, 'single')
+        fprintf(1, 'warning: single data converted to double for analysis');
+        DataFile{1, 2} = '';
+        Data{1} = double(DataFile1);
+        Data{2} = double(DataFile2);
+        aData = [Data{1};Data{2}];
+        
     else
         fprintf(1, 'error: could not recognise data format (possibly single) \n');
     end
