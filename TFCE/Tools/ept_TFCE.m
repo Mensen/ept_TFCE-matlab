@@ -319,9 +319,13 @@ display('Calculating Actual Differences...')
         
     elseif type == 'c'
         
-        %Repmat B to match the Data sizes
-        B2 = Data{2}(:, ones(nCh,1), ones(nS,1));
+        % calculate the size of the data
+        data_size = size(Data{1}); data_size(1) = [];
 
+        % repmat the correlation data to match the data size
+        B2 = repmat(Data{2}, [1, data_size]);
+
+        % calculate the correlation coefficient (uncorrected for n)
         n = size(Data{2},1);
         Exy = sum(B2.*Data{1});
         ExEy = sum(Data{2})*sum(Data{1});
@@ -400,10 +404,12 @@ display('Calculating Permutations...')
                 
         
             elseif type == 'c' %correlation analysis
-                %Repmat B to match the Data sizes
+                
+                
+                % repmat B to match the Data sizes
                 Bp  = Data{2}(randperm(nB));
-                B2p = Bp(:, ones(nCh,1), ones(nS,1));
-
+                B2p = repmat(Bp, [1, data_size]);
+                                
                 n    = size(Bp,1);
                 Exy  = sum(B2p.*Data{1});
                 ExEy = sum(Bp)*sum(Data{1});
