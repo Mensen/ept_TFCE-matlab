@@ -92,7 +92,7 @@
 % - Assigns defaults rather than prompting user for information
 % 
 
- function []= ept_TFCE(DataFile1, DataFile2, ElecFile, varargin)
+ function Results = ept_TFCE(DataFile1, DataFile2, ElecFile, varargin)
 
 % assignin('base', 'varargin', varargin); 
 %% Set Defaults
@@ -105,6 +105,7 @@
  plots      = 0; % change to '1' to show significance plots after calculation
  flag_ft    = 0; 
  flag_tfce  = 1;
+ flag_save  = 1;
  ChN = [];
  
 % Set random stream depending on the clock value (unpredictable).
@@ -141,6 +142,8 @@ if nargin > 2
             flag_ft     = Value;
         case 'flag_tfce'
             flag_tfce   = Value;
+        case 'flag_save'
+            flag_save   = Value;
         case 'plots'
             plots       = Value;
         case 'chn'
@@ -232,7 +235,7 @@ elseif nargin > 2;
         DataFile{1, 2} = '';
         Data{1} = DataFile1;
         Data{2} = DataFile2;
-        aData = [Data{1};Data{2}];
+        aData = [Data{1}; Data{2}];
         
     elseif isa(DataFile1, 'single')
         fprintf(1, 'warning: single data converted to double for analysis');
@@ -504,7 +507,9 @@ Results.maxTFCE             = sort(maxTFCE);
 Results.P_Values            = P_Values;
 
 % save the file in the current directory
-save (saveName, 'Info', 'Data', 'Results', '-mat')
+if flag_save
+    save (saveName, 'Info', 'Data', 'Results', '-mat')
+end
 
 %%
 display('All done!')
