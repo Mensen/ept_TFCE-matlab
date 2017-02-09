@@ -834,48 +834,30 @@ Obs   = handles.Obs;
 
 %% Prepare the interpolation function for ept_topoplot
 
-    gridscale = 100;
+Th = pi/180*[e_loc.theta];        % Calculate theta values from x,y,z e_loc
+Rd = [e_loc.radius];              % Calculate radian values from x,y,z e_loc
 
-    Th = pi/180*(cell2mat({e_loc.theta}));   
-    Rd = cell2mat({e_loc.radius});
-    % Transform coordinates  
-    x = Rd.*cos(Th);                          
-    y = Rd.*sin(Th);
- 
-    intrad = min(1.0,max(abs(Rd)*1.02));      
-    rmax = 0.5; 
-    intrad = max(intrad,0.5); % In case the maximum radius of a channel is not 0.5 make it so...
-    squeezefac = rmax/intrad;
-  
-    %% bfs_center = bst_bfs(vertices)' // [ HeadCenter, Radius ] = bst_bfs( Vertices )
-    vertices = [x;y]';
-    mass = mean(vertices);
-    diffvert = bsxfun(@minus, vertices, mass); % originally uses bst_bsxfun but only for older Matlab versions
-    R0 = mean(sqrt(sum(diffvert.^2, 2)));
-    % Optimization
-    vec0 = [mass,R0];
-    minn = ept_fminsearch(@dist_sph, vec0, [], vertices);
-    HeadCenter = minn(1:end-1); % 3x1
-    % Center vertices on BFS center    
-    coordC = bsxfun(@minus, vertices, HeadCenter);
+x = Rd.*cos(Th);                            % Calculate 2D projected X
+y = Rd.*sin(Th);                            % Calculate 2D projected Y
 
-    nx = coordC(:,1); 
-    ny = coordC(:,2); 
-    snx = nx*squeezefac; % squeezed and normalised coordinates
-    sny = ny*squeezefac; % squeezed and normalised coordinates
-    
-    Xq = linspace(-0.5,0.5,gridscale);
-    XYq = Xq(ones(gridscale,1),:);
-    
-    % Test for TF data type...
-    if ndims(Obs) == 3
-        F  = TriScatteredInterp(snx, sny, Obs(:,1,1), 'natural');
-    else
-        F  = TriScatteredInterp(snx, sny, Obs(:,1), 'natural');
-    end
+% Squeeze the coordinates into a -0.5 to 0.5 box
+intrad = min(1.0,max(abs(Rd))); intrad = max(intrad,0.5); squeezefac = 0.5/intrad;
 
-%% Set the handles for the topoplot 
-    
+snx = x'*squeezefac; sny = y'*squeezefac;
+
+gridscale = 100;
+Xq = linspace(-0.5,0.5,gridscale);
+XYq = Xq(ones(gridscale,1),:);
+
+% Test for TF data type...
+if ndims(Obs) == 3
+    F  = TriScatteredInterp(snx, sny, Obs(:,1,1), 'natural');
+else
+    F  = TriScatteredInterp(snx, sny, Obs(:,1), 'natural');
+end
+
+%% Set the handles for the topoplot
+
 handles.F   = F;
 handles.XYq = XYq;
 handles.snx = snx;
@@ -1085,6 +1067,10 @@ switch seltype
                             end
                             
                         else
+                            
+                            % make sure Data is in columns
+                            Data = reshape(Data, 1, []);
+                            
                             % Calculate SE for within group using Cousineau method
                             ParticipantScore = cell2mat(cellfun(@(x) x(:,IdCh,:), Data, 'UniformOutput', false));
                             ParticipantMean  = mean(cell2mat(cellfun(@(x) x(:,IdCh,:), Data, 'UniformOutput', false)),2);
