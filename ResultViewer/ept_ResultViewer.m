@@ -461,7 +461,13 @@ sPoint  = sscanf(get(handles.tx_sPoint,'String'),'%*s %i');
 fPoint  = sscanf(get(handles.tx_fPoint,'String'),'%*s %i');
 Factor  = get(handles.Pop_FactorSelect,'Value');
 
-ept_IndividualTopoplots(Data, e_loc, Results, Factor, fPoint+size(Data{1},3)*(sPoint-1));
+% check for frequency domain and adjust if necessary
+if fPoint > 1
+    ept_IndividualTopoplots(Data, e_loc, Results, Factor, fPoint+size(Data{1},3)*(sPoint-1));
+else
+    ept_IndividualTopoplots(Data, e_loc, Results, Factor, sPoint);
+end
+
 
 %% --- Executes on button press in pb_BarChart.
 function pb_BarChart_Callback(hObject, eventdata, handles)
@@ -953,6 +959,11 @@ function makeERPplot(hObject, eventdata, handles)
 seltype = get(gcf,  'selectiontype');
 Ch      = get(gcbo, 'userData');
 FactorType = get(handles.Pop_FactorSelect,'Value');
+
+% check whether the name of the electrode or position marker was selected
+if any(strcmp(Ch, {'.', '+'}))
+   Ch      = get(gcbo, 'string');    
+end
 
 switch seltype
 
