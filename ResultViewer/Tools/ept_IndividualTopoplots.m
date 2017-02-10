@@ -16,7 +16,7 @@ if isstruct(Results.TFCE_Obs)
         b       = cellfun(@mean, iData, 'UniformOutput', false); 
         Stats   = Results.TFCE_Obs.B(:,Sample)';
     else
-        error('Only main effects currently available: Factor = 1 or 2.')
+        error('Only main effects currently available: Factor = A or B.')
     end
 else
     iData  = cellfun(@(x) x(:,:,Sample), Data, 'UniformOutput', false);
@@ -81,16 +81,21 @@ for j = 1:size(iData,1) % loop for rows (levels)
     for i = 1:size(iData{j},1) % loop for plots (individuals + group)
         % draw each topoplot
         ept_Topoplot(iData{j}(i,:), e_loc,...
-            'Axes', H.Axes(i,j));
+            'Axes', H.Axes(i,j), ...
+            'PlotChannels', 0, ...
+            'LineStyle', 'none');
     end
 end 
 
 % Plot group topoplots
 for i = 1:size(gData,1)
     ept_Topoplot(gData(i,:), e_loc,...
-        'Axes', H.Axes(end, i));
+        'Axes', H.Axes(end, i), ...
+        'PlotChannels', 0, ...
+        'LineStyle', 'none');
 end
 
 % Plot the larger TFCE topoplot
 ept_Topoplot(Stats, e_loc,...
-    'Axes', H.TFCEAxes);
+    'Axes', H.TFCEAxes, ...
+    'LineStyle', 'none');

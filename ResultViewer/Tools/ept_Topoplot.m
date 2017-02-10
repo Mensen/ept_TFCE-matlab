@@ -33,6 +33,7 @@ HeadWidth           = 2.5;
 HeadColor           = [0,0,0];
 ContourWidth        = 0.5;
 NumContours         = 12;
+LineStyle           = '-';
 
 PlotContour         = 1;            % Determines whether the contour lines are drawn
 PlotSurface         = 0;            % Determines whether the surface is drawn
@@ -69,6 +70,10 @@ if nargin > 2
             HeadWidth           = Value;
         case 'numcontours'
             NumContours         = Value;    
+        case 'contourwidth'
+            ContourWidth        = Value;
+        case 'linestyle'
+            LineStyle           = Value;
         case 'newfigure'
             NewFigure           = Value;
         case 'axes'
@@ -166,6 +171,7 @@ if PlotContour == 1
         'LineWidth',        ContourWidth        ,...
         'Color',            'k'                 ,...
         'LevelList',        LevelList           ,...
+        'lineStyle',        LineStyle              ,...
         'HitTest',          'off'               );
 end
 
@@ -250,8 +256,7 @@ end
 % end
 
 % Adjustments
-% square axes
-set(H.CurrentAxes, 'PlotBoxAspectRatio', [1, 1, 1]);
-% hide the axes
-set(H.CurrentAxes, 'visible', 'off');
+axis square
+axis off
+
 
