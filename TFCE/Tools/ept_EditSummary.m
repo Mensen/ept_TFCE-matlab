@@ -2,12 +2,17 @@ function ept_EditSummary(Channel)
 %% Review ERP summary files for participant outliers
 
 [File, DataPath] = uigetfile('', 'Please Select the EEG Summary File', 'MultiSelect', 'off');
-Data     = load ([DataPath, '\' File], 'Summary', 'DataFile');
+Data     = load (fullfile(DataPath, File), 'Summary', 'DataFile');
 Summary  = Data.Summary;
-Labels   = Data.DataFile;
 
-if nargin == 0;
-    Channel  = 121;
+if isfield(Data, 'Labels')
+    Labels   = Data.DataFile;
+else
+    Labels = {''};
+end
+
+if nargin < 1
+    Channel = size(Summary, 2);
 end
 
 H.Figure = figure;

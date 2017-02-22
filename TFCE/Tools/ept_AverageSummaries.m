@@ -11,7 +11,7 @@ clc
 
 for i = 1:length(DataFiles)
     
-    LoadData        = load (strcat(DataPath, DataFiles{i}));
+    LoadData = load(fullfile(DataPath, DataFiles{i}), 'Summary');
     Data{i}         = LoadData.Summary;
 end
 
