@@ -322,23 +322,18 @@ display('Calculating Actual Differences...')
         
     elseif type == 'c'
         
+        % Define "condition" function for correlation calculation
+        condition = @(x) (x-mean(x))./std(x);
+        
         % calculate the size of the data
         data_size = size(Data{1}); data_size(1) = [];
 
         % repmat the correlation data to match the data size
-        B2 = repmat(Data{2}, [1, data_size]);
+        behavior_repeated = repmat(Data{2}, [1, data_size]);
 
-        % calculate the correlation coefficient (uncorrected for n)
-        n = size(Data{2},1);
-        Exy = sum(B2.*Data{1});
-        ExEy = sum(Data{2})*sum(Data{1});
-        Ex_2 = sum(Data{2})^2;
-        E_x2 = sum(Data{2}.^2);
-        Ey_2 = sum(Data{1}.^2);
-        E_y2 = sum(Data{1}.^2);
-
-        T_Obs = squeeze((Exy-(ExEy./n)) * 1./ (sqrt(E_x2-(Ex_2/n))*sqrt(E_y2-(Ey_2./n))));
-     
+        % calculate the correlation coefficient (r) but call it T_Obs for consistency
+        T_Obs = (condition(Data{1})' * condition(behavior_repeated)) / sum(condition(Data{1}).^2);
+            
     end
 
 % check for non-zero T-values (will crash TFCE)
@@ -408,20 +403,12 @@ display('Calculating Permutations...')
         
             elseif type == 'c' %correlation analysis
                 
+                % repmat the correlation data to match the data size
+                behavior_perm = Data{2}(randperm(nB));
+                behavior_repeated = repmat(behavior_perm, [1, data_size]);
                 
-                % repmat B to match the Data sizes
-                Bp  = Data{2}(randperm(nB));
-                B2p = repmat(Bp, [1, data_size]);
-                                
-                n    = size(Bp,1);
-                Exy  = sum(B2p.*Data{1});
-                ExEy = sum(Bp)*sum(Data{1});
-                Ex_2 = sum(Bp)^2;
-                E_x2 = sum(Bp.^2);
-                Ey_2 = sum(Data{1}).^2;
-                E_y2 = sum(Data{1}.^2);
-
-                T_Perm = squeeze((Exy-(ExEy./n)) * 1./ (sqrt(E_x2-(Ex_2/n))*sqrt(E_y2-(Ey_2./n))));
+                % calculate the correlation coefficient (r) but call it T_Perm for consistency
+                T_Perm = (condition(Data{1})' * condition(behavior_repeated)) / sum(condition(Data{1}).^2);
 
             else
                 error('Unrecognised analysis-type; see help file for valid inputs')
@@ -429,7 +416,7 @@ display('Calculating Permutations...')
             
         % TFCE transformation...
         if flag_tfce
-            if ismatrix(T_Perm);
+            if ismatrix(T_Perm)
                 if ~flag_ft
                     TFCE_Perm = ept_mex_TFCE2D(T_Perm, ChN, E_H);
                 else
