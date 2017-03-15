@@ -11,16 +11,22 @@ if nargin < 3
         'power ~ left_stroke * right_stroke * spindle_type';
 end
 
+% run single full_model for parameters
+temp_model = fitlme(full_table, model_description);
+
 % pre-allocate model (TODO: find number of coefficients before)
-num_coeff = 12;
-num_chans = size(data_of_interest{1}, 1);
-num_observations = sum(cellfun(@(x) size(x, 2), data_of_interest));
+num_coeff = length(temp_model.CoefficientNames);
+num_chans = size(data_of_interest, 1);
+num_observations = size(data_of_interest, 2);
 
 full_model = struct(...
     'beta', nan(num_coeff, num_chans), ...
     'se', nan(num_coeff, num_chans));
 
 reduced_data = nan(num_observations, num_chans);
+
+% get dependent variable name from model description
+dv_name = strtok(model_description, ' ');
 
 % loop the model for each channel
 % initiate progress meter
@@ -29,13 +35,9 @@ swa_progress_indicator('initiate', 'number of channels complete')
 for nCh = 1 : num_chans
     % update progress
     swa_progress_indicator('update', nCh, num_chans);
-
-    % get the data for that channel
-    data_output = cellfun(@(x) x(nCh, :), data_of_interest, 'uniform', false);
-    
-    % use log10 to make data normally distributed
-    dependent_variable = log10([cell2mat(data_output)']);
-    full_table.power = dependent_variable;
+   
+    % put the channel in the table
+    full_table.(dv_name) = data_of_interest(nCh, :)';
     
     % run the actual model
     full_model_object = fitlme(full_table, model_description);
