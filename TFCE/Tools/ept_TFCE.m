@@ -308,39 +308,38 @@ maxTFCE = zeros(nPerm,1);
 display('Calculating Actual Differences...')
 
 % Calculate different T-values for independent and dependent groups
-    if type == 'i'
-        
-        T_Obs = (mean(Data{1})-mean(Data{2}))./sqrt(var(Data{1})/nA+var(Data{2})/nB);
-        T_Obs = squeeze(T_Obs);   
-
-    elseif type == 'd' || type == 'o'
-
-        D    = Data{1}-Data{2};
-
-        T_Obs = mean(D,1)./(std(D)./sqrt(nA));
-        T_Obs = squeeze(T_Obs);
-        
-    elseif type == 'c'
-        
-        % Define "condition" function for correlation calculation
-        condition = @(x) (x-mean(x))./std(x);
-        
-        % calculate the size of the data
-        data_size = size(Data{1}); data_size(1) = [];
-
-        % repmat the correlation data to match the data size
-        behavior_repeated = repmat(Data{2}, [1, data_size]);
-
-        % calculate the correlation coefficient (r) but call it T_Obs for consistency
-        T_Obs = (condition(Data{1})' * condition(behavior_repeated)) / sum(condition(Data{1}).^2);
-            
-    end
+if type == 'i'
+    
+    T_Obs = (mean(Data{1})-mean(Data{2}))./sqrt(var(Data{1})/nA+var(Data{2})/nB);
+    T_Obs = squeeze(T_Obs);
+    
+elseif type == 'd' || type == 'o'
+    
+    D    = Data{1}-Data{2};
+    
+    T_Obs = mean(D,1)./(std(D)./sqrt(nA));
+    T_Obs = squeeze(T_Obs);
+    
+elseif type == 'c'
+    % Define "condition" function for correlation calculation
+    condition = @(x) (x-mean(x))./std(x);
+    
+    % calculate the size of the data
+    data_size = size(Data{1}); data_size(1) = [];
+    
+    % repmat the correlation data to match the data size
+    behavior_repeated = repmat(Data{2}, [1, data_size]);
+    
+    % calculate the correlation coefficient (r) but call it T_Obs for consistency
+    T_Obs = (condition(Data{1})' * condition(behavior_repeated)) / sum(condition(Data{1}).^2);
+    
+end
 
 % check for non-zero T-values (will crash TFCE)
 if max(abs(T_Obs(:))) < 0.00001
     error('T-values were all 0')
 end
-    
+
 % TFCE transformation...
 if flag_tfce
     if ismatrix(T_Obs);

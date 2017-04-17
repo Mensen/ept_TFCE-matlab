@@ -1,7 +1,7 @@
 function [observed, perm_values] = ept_slow_lme_permutation(data_of_interest, full_table, model_description, factors, channel_neighbours)
 % script to run the complete lme analysis for all channels etc
 
-NUM_PERMS = 1000;
+NUM_PERMS = 1500;
 FLAG_TFCE = true;
 
 % run full model on all channels
@@ -37,7 +37,8 @@ for nCh = 1 : num_chans
     full_table.(dv_name) = data_of_interest(nCh, :)';
     
     % run the actual model
-    full_model_object = fitlme(full_table, model_description);
+    full_model_object = fitlme(full_table, model_description, ...
+        'covariancePattern', 'Diagonal'); % FullCholesky | CompSymm | Diagonal | Full
     
     % extract parameters of interest
     observed.beta(:, nCh) = double(full_model_object.Coefficients(:, 2));
@@ -55,9 +56,13 @@ if FLAG_TFCE
     end
 end
 
+% pre-allocate fail detector
+failed_perm = false(NUM_PERMS, 1);
+
 % run permutations
 % ''''''''''''''''
-if NUM_PERMS > 1
+if NUM_PERMS > 0
+   
    
     % pre-allocate empirical distribution
     perm_values = struct(...
@@ -65,6 +70,9 @@ if NUM_PERMS > 1
         'tfce_value', nan(num_coeff, NUM_PERMS));
     perm_tvalue = nan(num_coeff, num_chans);
     perm_tfce = nan(num_coeff, num_chans);
+
+    % start basic save file for temporary saving
+    save('ept_temp_perm_save.mat', 'observed', 'perm_values', 'model_description', 'factors');
     
     % initiate progress meter
     swa_progress_indicator('initiate', 'number of permutations complete')
@@ -80,38 +88,56 @@ if NUM_PERMS > 1
             % put the channel in the table
             perm_table.(dv_name) = data_of_interest(nCh, :)';
             
-            % run the actual model
-            full_model_object = fitlme(perm_table, model_description);
+            % some permutations seem to be weird so...
+            try
+                % run the actual model
+                full_model_object = fitlme(perm_table, model_description, ...
+                    'covariancePattern', 'Diagonal'); % FullCholesky | CompSymm | Diagonal | Full
+                
+                % extract parameters of interest
+                perm_tvalue(:, nCh) = double(full_model_object.Coefficients(:, 4));
             
-            % extract parameters of interest
-            perm_tvalue(:, nCh) = double(full_model_object.Coefficients(:, 4));
-        end
-        
-        % run TFCE analysis over permuted data
-        if FLAG_TFCE
-            for n = 1 : num_coeff
-                temp_value = ept_mex_TFCE2D(repmat(perm_tvalue(n, :), [2, 1])', channel_neighbours, [0.66, 1]);
-                perm_tfce(n, :) = temp_value(:, 1);
+            catch
+                % if the model fails...
+                failed_perm(n_perm) = true;
+                % skip the rest of the channels since TFCE won't work anyway
+                break 
             end
         end
         
-        % find the maximum t-value (for each parameter separately)
-        perm_values.t_value(:, n_perm) = max(perm_tvalue, [], 2);
-        perm_values.tfce_value(:, n_perm) = max(perm_tfce, [], 2);
+        if ~failed_perm(n_perm) % check for failed permutation
+            % run TFCE analysis over permuted data
+            if FLAG_TFCE
+                for n = 1 : num_coeff
+                    temp_value = ept_mex_TFCE2D(repmat(perm_tvalue(n, :), [2, 1])', channel_neighbours, [0.66, 1]);
+                    perm_tfce(n, :) = temp_value(:, 1);
+                end
+            end
+            
+            % find the maximum t-value (for each parameter separately)
+            perm_values.t_value(:, n_perm) = max(abs(perm_tvalue), [], 2);
+            perm_values.tfce_value(:, n_perm) = max(abs(perm_tfce), [], 2);
+        end
+        
+        % update temp save with the permutation data in case of loss
+        save('ept_temp_perm_save.mat', 'perm_values', '-append');
         
     end
 end
 
+% eliminate the nan runs
+x = 1;
+
 % determine significance of each fixed factor from t-values
 for n = 1 : num_coeff
     [~, bin] = histc(abs(observed.t_value(n, :)), sort(abs(perm_values.t_value(n, :))));
-    observed.max_pvalue(n, :) = [bin + 1] ./ (NUM_PERMS + 1);
+    observed.max_pvalue(n, :) = 1 - [bin + 1] ./ (NUM_PERMS + 1);
 end
 
-% determine significance of each fixed factor from t-values
+% determine significance of each fixed factor from tfce-values
 if FLAG_TFCE
     for n = 1 : num_coeff
         [~, bin] = histc(abs(observed.tfce_value(n, :)), sort(abs(perm_values.tfce_value(n, :))));
-        observed.tfce_pvalue(n, :) = [bin + 1] ./ (NUM_PERMS);
+        observed.tfce_pvalue(n, :) = 1 -[bin + 1] ./ (NUM_PERMS);
     end
 end
