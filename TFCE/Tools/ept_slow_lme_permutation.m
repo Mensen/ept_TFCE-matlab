@@ -1,8 +1,18 @@
 function [observed, perm_values] = ept_slow_lme_permutation(data_of_interest, full_table, model_description, factors, channel_neighbours)
 % script to run the complete lme analysis for all channels etc
 
-NUM_PERMS = 1500;
+% define defaults
+NUM_PERMS = 0;
 FLAG_TFCE = true;
+
+% check arguments
+if nargin < 5
+    FLAG_TFCE = false; 
+    fprintf(1, 'Warning: without the channels neighbourhood you cannot run TFCE');
+end
+
+% assign output to perm_values in case none are run 
+perm_values = [];
 
 % run full model on all channels
 % ''''''''''''''''''''''''''''''
@@ -123,9 +133,11 @@ if NUM_PERMS > 0
         save('ept_temp_perm_save.mat', 'perm_values', '-append');
         
     end
+else
+    return
 end
 
-% eliminate the nan runs
+% TODO: eliminate the nan runs
 x = 1;
 
 % determine significance of each fixed factor from t-values
