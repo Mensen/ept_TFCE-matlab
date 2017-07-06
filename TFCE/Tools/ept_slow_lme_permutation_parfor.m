@@ -42,30 +42,44 @@ observed = struct(...
     'model_pvalue', nan(num_coeff, num_chans), ...
     'max_pvalue', nan(num_coeff, num_chans), ...
     'tfce_pvalue', nan(num_coeff, num_chans));
-    
+
+observed_beta = nan(num_coeff, num_chans);
+observed_se = nan(num_coeff, num_chans);
+observed_t_value = nan(num_coeff, num_chans);
+observed_model_pvalue = nan(num_coeff, num_chans);
+
 % loop the model for each channel
 fprintf(1, '\nTesting observed model...');
-swa_progress_indicator('initiate', 'number of channels complete')
-for nCh = 1 : num_chans
-    swa_progress_indicator('update', nCh, num_chans);
+parfor nCh = 1 : num_chans
     
-    % put the channel in the table
-    full_table.(dv_name) = data_of_interest(nCh, :)';
+    fprintf(1, '.\n');
+    
+    % put the channel in the table (required for parfor not to call struct directly
+    temp_table = full_table;
+    temp_table.(dv_name) = data_of_interest(nCh, :)';
     
     % run the actual model
     if FLAG_RANDOM
-        full_model_object = fitlme(full_table, model_description, ...
+        full_model_object = fitlme(temp_table, model_description, ...
             'covariancePattern', 'Diagonal'); % FullCholesky | CompSymm | Diagonal | Full        
     else
-        full_model_object = fitlme(full_table, model_description);
+        full_model_object = fitlme(temp_table, model_description);
     end
     
     % extract parameters of interest
-    observed.beta(:, nCh) = double(full_model_object.Coefficients(:, 2));
-    observed.se(:, nCh) = double(full_model_object.Coefficients(:, 3));
-    observed.t_value(:, nCh) = double(full_model_object.Coefficients(:, 4));
-    observed.model_pvalue(:, nCh) = double(full_model_object.Coefficients(:, 6));
+    observed_beta(:, nCh) = double(full_model_object.Coefficients(:, 2));
+    observed_se(:, nCh) = double(full_model_object.Coefficients(:, 3));
+    observed_t_value(:, nCh) = double(full_model_object.Coefficients(:, 4));
+    observed_model_pvalue(:, nCh) = double(full_model_object.Coefficients(:, 6));
 end
+fprintf(1, ' complete\n');
+
+% for parfor put the observed values into the observed array
+observed = struct(...
+    'beta', observed_beta, ...
+    'se', observed_se, ...
+    't_value', observed_t_value, ...
+    'model_pvalue', observed_model_pvalue);
 
 % run TFCE analysis over observed t-values
 if FLAG_TFCE
@@ -82,6 +96,7 @@ failed_perm = false(NUM_PERMS, 1);
 % run permutations
 % ''''''''''''''''
 if NUM_PERMS > 0
+   
    
     % pre-allocate empirical distribution
     perm_values = struct(...
