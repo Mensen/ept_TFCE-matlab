@@ -61,6 +61,11 @@ if ndims(P_Values) == 2
             cluster_results(n).sample_range = ...
                 [num2str(min(sig_samples)), ' - ', num2str(max(sig_samples))];
             
+            % export the actual supra-cluster points
+            cluster_results(n).cluster_locations = false(size(Results.P_Values));
+            cluster_results(n).cluster_locations(...
+                all_clusters == unique_clusters(n)) = true;
+            
         end
     end
     
