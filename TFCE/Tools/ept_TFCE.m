@@ -235,14 +235,18 @@ elseif nargin > 2;
         DataFile{1, 2} = '';
         Data{1} = DataFile1;
         Data{2} = DataFile2;
-        aData = [Data{1}; Data{2}];
+        if type == 'i' || type == 'd'
+            aData = [Data{1}; Data{2}];
+        end
         
     elseif isa(DataFile1, 'single')
         fprintf(1, 'warning: single data converted to double for analysis');
         DataFile{1, 2} = '';
         Data{1} = double(DataFile1);
         Data{2} = double(DataFile2);
-        aData = [Data{1};Data{2}];
+        if type == 'i' || type == 'd'
+            aData = [Data{1}; Data{2}];
+        end 
         
     else
         fprintf(1, 'error: could not recognise data format (possibly single) \n');
@@ -331,7 +335,10 @@ elseif type == 'c'
     behavior_repeated = repmat(Data{2}, [1, data_size]);
     
     % calculate the correlation coefficient (r) but call it T_Obs for consistency
-    T_Obs = (condition(Data{1})' * condition(behavior_repeated)) / sum(condition(Data{1}).^2);
+    temp_observed = [reshape(condition(Data{1}), nA, [])' ...
+        * reshape(condition(behavior_repeated), nA, [])] ...
+        / reshape(sum(condition(Data{1}).^2), 1, []);
+    T_Obs = reshape(temp_observed, data_size);
     
 end
 
@@ -407,7 +414,11 @@ display('Calculating Permutations...')
                 behavior_repeated = repmat(behavior_perm, [1, data_size]);
                 
                 % calculate the correlation coefficient (r) but call it T_Perm for consistency
-                T_Perm = (condition(Data{1})' * condition(behavior_repeated)) / sum(condition(Data{1}).^2);
+                temp_observed = [reshape(condition(Data{1}), nA, [])' ...
+                    * reshape(condition(behavior_repeated), nA, [])] ...
+                    / reshape(sum(condition(Data{1}).^2), 1, []);
+                T_Perm = reshape(temp_observed, data_size);
+                
 
             else
                 error('Unrecognised analysis-type; see help file for valid inputs')

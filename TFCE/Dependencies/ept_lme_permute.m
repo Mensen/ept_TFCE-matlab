@@ -15,7 +15,7 @@ function perm_table = ept_lme_permute(table, factors)
 % for example:
 % factors = struct(...
 %     'name', {'stroke_id', 'spindle_type'}, ... % covariate names
-%     'flag_within', [10, 1]); % flag_within
+%     'flag_within', [0, 1]); % flag_within
 
 % check for participant_id
 if ~any(strcmp('participant_id', table.Properties.VariableNames))
