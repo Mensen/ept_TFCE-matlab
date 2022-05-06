@@ -13,12 +13,12 @@ if ndims(P_Values) == 2
     % Look for new clusters
     x = TFCE_Obs; % copy TFCE_Obs
     x(P_Values> threshold) = 0; % Threshold the data at alpha
-    Cp = ept_ClusRes(x, ChN, 0.01); % Calculate Positive Clusters
+    Cp = ept_ClusRes(x, ChN, 0.05); % Calculate Positive Clusters
     
     xn = x; % copy x
     xn(x>0)=0; % Only show negative x
     xn = abs(xn); % Make negative x's positive
-    Cn = ept_ClusRes(xn, ChN, 0.01); % Calculate Negative Clusters
+    Cn = ept_ClusRes(xn, ChN, 0.05); % Calculate Negative Clusters
     
     all_clusters = Cn-Cp; % Combine the two
        
@@ -74,7 +74,7 @@ else % for Time-Freqency Data...
     % Calculate clusters above p-value threshold
     data = TFCE_Obs; % copy TFCE_Obs
     data(P_Values>threshold) = 0; % Threshold the data at alpha
-    all_clusters = ept_ClusRes3D(data, ChN, 0.01); % Calculate Negative Clusters    
+    all_clusters = ept_ClusRes3D(data, ChN, 0.05); % Calculate Negative Clusters    
     
     unique_clusters = unique(all_clusters); % How many different clusters are there?
     unique_clusters(unique_clusters==0)=[]; % Eliminate the 0 from being a unique cluster
@@ -93,17 +93,22 @@ else % for Time-Freqency Data...
         sig_ind          = find(all_clusters== unique_clusters(n)); % find the rows and columns that are significant
         [SizeC, SizeF, sig_samples]=ind2sub(size(all_clusters),sig_ind);
 
-        ClusRes{n,1}    = peak_channel(1); % peak channel (just the first of many possible peak channels (but averaging may result in a channel in between two that is not significant)!
-        ClusRes{n,2}    = peak_sample(1);
-        ClusRes{n,3}    = PeakF(1);
-        ClusRes{n,4}    = Obs_Values(peak_channel(1),PeakF(1),peak_sample(1));
-        ClusRes{n,5}    = P_Values(peak_channel(1),PeakF(1),peak_sample(1));                
-        ClusRes{n,6}    = numel(sig_ind);
-        ClusRes{n,7}    = numel(unique(SizeC));
-        ClusRes{n,8}    = numel(unique(sig_samples));
-        ClusRes{n,9}    = numel(unique(SizeF));
-        ClusRes{n,10}   = [num2str(min(sig_samples)), ' - ', num2str(max(sig_samples))];
-        ClusRes{n,11}   = [num2str(min(SizeF)), ' - ', num2str(max(SizeF))];
+        cluster_results(n).channel_peak    = peak_channel(1); % peak channel (just the first of many possible peak channels (but averaging may result in a channel in between two that is not significant)!
+        cluster_results(n).sample_peak    = peak_sample(1);
+        cluster_results(n).freq_peak    = PeakF(1);
+        cluster_results(n).max_t_value    = Obs_Values(peak_channel(1),PeakF(1),peak_sample(1));
+        cluster_results(n).p_value_peak    = P_Values(peak_channel(1),PeakF(1),peak_sample(1));                
+        cluster_results(n).cluster_size    = numel(sig_ind);
+        cluster_results(n).unique_channels    = numel(unique(SizeC));
+        cluster_results(n).unique_samples    = numel(unique(sig_samples));
+        cluster_results(n).unique_freqs    = numel(unique(SizeF));
+        cluster_results(n).sample_range   = [num2str(min(sig_samples)), ' - ', num2str(max(sig_samples))];
+        cluster_results(n).freq_range   = [num2str(min(SizeF)), ' - ', num2str(max(SizeF))];
+        
+        % export the actual supra-cluster points
+        cluster_results(n).cluster_locations = false(size(Results.P_Values));
+        cluster_results(n).cluster_locations(...
+            all_clusters == unique_clusters(n)) = true;
         
     end    
 end    
